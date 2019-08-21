@@ -7,11 +7,11 @@ import (
 )
 
 func (s *Con) Default(w http.ResponseWriter, r *http.Request) {
+	s.setupResponse(&w, r)
 	result := Welcom{
 		"Todo Api",
 		1,
 	}
-	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case "GET":
 		s.Write(result, w)
@@ -31,9 +31,13 @@ func (s *Con) Default(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Con) Todos(w http.ResponseWriter, r *http.Request) {
+	s.setupResponse(&w, r)
 	result := Todo{Done: false}
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
+	case "OPTIONS":
+		w.WriteHeader(http.StatusOK)
+		break
 	case "GET":
 		keys := r.URL.Query()
 		if id, _ := strconv.ParseInt(keys.Get("id"), 10, 64); id > 0 {
@@ -172,4 +176,10 @@ func (s *Con) NotFound(w http.ResponseWriter) {
 	j, _ := json.Marshal(v)
 	w.WriteHeader(http.StatusNotFound)
 	w.Write(j)
+}
+func (s *Con) setupResponse(w *http.ResponseWriter, req *http.Request) {
+	(*w).Header().Set("Content-Type", "application/json")
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding")
 }
