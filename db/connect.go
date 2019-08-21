@@ -19,7 +19,7 @@ type Con struct {
 }
 
 func Init(host string, port int, user string, pass string, database string) *Con {
-	return &Con{
+	c := &Con{
 		db:         nil,
 		accessLock: &sync.RWMutex{},
 		host:       host,
@@ -28,6 +28,8 @@ func Init(host string, port int, user string, pass string, database string) *Con
 		pass:       pass,
 		database:   database,
 	}
+	c.dumpTodo()
+	return c
 }
 
 func (s *Con) GetDb() *sql.DB {
@@ -48,6 +50,7 @@ func (s *Con) GetDb() *sql.DB {
 	// Get timeout from configuration
 	s.accessLock.Lock()
 	connString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", s.user, s.pass, s.host, s.port, s.database)
+	// connString := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8", s.user, s.pass, s.host, s.port)
 	s.db, err = sql.Open("mysql", connString)
 	if err != nil {
 		panic(err.Error())
@@ -111,4 +114,17 @@ func (s *Con) SaveTodo(todo *Todo) bool {
 
 func (s *Con) Error(template string, arg ...interface{}) {
 	fmt.Printf(template+"\n", arg...)
+}
+
+func (s *Con) dumpTodo() {
+	dump := []string{"USE mysql"}
+	dump = append(dump, "CREATE DATABASE IF NOT EXISTS `todo` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci")
+	dump = append(dump, "USE todo")
+	dump = append(dump, "CREATE TABLE IF NOT EXISTS `list` (`id` int(10) NOT NULL AUTO_INCREMENT, `name` varchar(255) NOT NULL, `date` datetime NOT NULL, `done` tinyint(1) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8")
+	for _, d := range dump {
+		_, err := s.GetDb().Exec(d)
+		if err != nil {
+			s.Error("Ошибка инициализации дампа %s %v", d, err)
+		}
+	}
 }
