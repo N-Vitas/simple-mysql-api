@@ -102,7 +102,24 @@ func (s *Con) Todos(w http.ResponseWriter, r *http.Request) {
 		s.ServerError("Ошибка обновления", w)
 		break
 	case "DELETE":
-		// Decode the JSON in the body and overwrite 'tom' with it
+		keys := r.URL.Query()
+		if id, _ := strconv.ParseInt(keys.Get("id"), 10, 64); id > 0 {
+			t, ok := s.GetTodo(int64(id))
+			if ok {
+				if s.DelTodo(t) {
+					v := make(map[string]string)
+					v["success"] = "Данныe удалены"
+					j, _ := json.Marshal(v)
+					w.Write(j)
+					return
+				}
+				s.ServerError("Ошибка удаления", w)
+				return
+			} else {
+				s.NotFound(w)
+				return
+			}
+		}
 		d := json.NewDecoder(r.Body)
 		err := d.Decode(&result)
 		if err != nil {
